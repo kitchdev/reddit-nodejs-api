@@ -1,5 +1,6 @@
 var bcrypt = require('bcrypt');
 var HASH_ROUNDS = 10;
+//require('longjohn');
 var secureRandom = require('secure-random');
 
 module.exports = function RedditAPI(conn) {
@@ -398,13 +399,13 @@ module.exports = function RedditAPI(conn) {
     
     createSession: function(userid, callback){
         var token = API.createSessionToken();
-        conn.query('INSERT INTO sessions SET userid= ?, token= ?', [userid, token], function(err, result){
-          if(!err || err.code === 'ER_DUP_ENTRY'){
+        conn.query(`INSERT INTO sessions SET id =?, token= ?`, [userid, token], function(err, result){
+          if(err.code === 'ER_DUP_ENTRY') {
             console.log(err,"this is where i am")
             callback(err);
-            console.log(token, 'token')
+            console.log(token, 'Error: dup entry, token from create session')
             }
-            else if(err){
+            else if(err && !err.code === 'ER_DUP_ENTRY'){	
               callback(err);
             }
             else{
@@ -415,31 +416,20 @@ module.exports = function RedditAPI(conn) {
       },
     
     getUserFromSession: function(cookies, callback){
-        conn.query( `SELECT users.id,
-                    users.username AS username,
-                    users.password AS password,
-                    users.createdOn,
-                    users.updatedOn,
-                    sessions.userid AS sessions_Id,
-                    sessions.token AS sessions_token
-                    from users
-                    LEFT JOIN sessions
-                    ON sessions.userid = users.id
+        conn.query( `SELECT sessions.id,
+                    sessions.token as sessionToken
+                    from sessions
                     WHERE token = ?
                     `, [cookies], function(err, result){
                       if(err){
                         callback(err)
                       }
                       else{
-                      
-                          var userObj =  {
-                          username: result.username,
-                          password: result.password,
-                          sessionId: result.sessions_Id,
-                          token: result.sessions_token 
-                          }
-                        console.log(userObj, "duddddde")
-                        callback(null, userObj);
+                      	  console.log("what does it look like",result);
+                          var userId = result[0]
+                        console.log(userId, "user ID dude")
+                        callback(null, userId);
+//						  callback(null,result)
                     
                         
                       }
@@ -447,17 +437,18 @@ module.exports = function RedditAPI(conn) {
                     })
                 },
       
-      	deleteUserFromSession: function(sessionCookie, callback) {
-      		conn.query(`
-      			DELETE FROM sessions WHERE token = ?
-      			`, [sessionCookie],
-      			function (err, result) {
-      				if (err) { callback(err) }
-      				else {
-      					callback (null, result)
-      				}
-      		});
-      	}  
+    signout: function(userid, callback)  { 
+    
+      conn.query(`DELETE FROM sessions WHERE id = ?`, [userid], function(err, result) {
+          if(err){
+            callback(err)
+          }
+          else{
+            callback(null, result)
+          }
+      });
+    }  
+      
     };
     return API;
   };

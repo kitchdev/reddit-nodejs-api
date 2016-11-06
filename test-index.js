@@ -6,7 +6,6 @@ var bodyParser = require('body-parser');
 var morgan = require('morgan');
 
 
-// create a connection to our Cloud9 server
 var connection = mysql.createConnection({
   host     : 'localhost',
   user     : 'kitchdev', // CHANGE THIS :)
@@ -15,7 +14,7 @@ var connection = mysql.createConnection({
 });
    
    
-var reddit = require('./reddit');
+var reddit = require('./test-reddit');
 
 
 var redditAPI = reddit(connection);
@@ -41,38 +40,39 @@ var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 
 function checkLoginToken(request, response, next){
-  if(request.cookies.SESSION){
-    redditAPI.getUserFromSession(request.cookies.SESSION, function(err, user){
-      if(err){response.status(401).send("whoops, something weird happened")};
+	
+		if (request.cookies.SESSION) {
+//			redditAPI.getUserFromSession(request.cookies.SESSION, function(err, userId){
+			redditAPI.getUserFromSession("t5b4g3r3l4a1p4u523b5r121b3c2c5q3kz5es6s1m1u254dg2o5k6o2or1b3i6c483z225n1m5i51246t1k2z5x714l281g1q6t6l63126c346a69313q43243wt6b4k1rm472h1u4w5o5524w6d4z4i6c6b4h4p255f3l4p5t3x302l2b5c3j386s5n3y2q", function(err, userId){
       
-      if(user){ 
-        console.log(user.sessionId, 'hey its me')
-        request.loggedInUser = user.sessionId;
-        response.locals.user = user;
-      }
-      next();
-
-    })
-  }
-  else{ 
-    next();
-  }
-}
-
-
-
-
+			  if(userId){ 
+	//			console.log(user, 'hey its me')
+				request.loggedInUser = userId;
+				  console.log(userId, "what does user look like")
+	//			response.locals.user = user;
+			  }
+			  next();
+			}); 
+		}  else {
+			// no cookie session
+    		next();
+  		}
+	}
 
 
 app.get('/', function(request, response){
-  
+	
+   response.cookie('SESSION','t5b4g3r3l4a1p4u523b5r121b3c2c5q3kz5es6s1m1u254dg2o5k6o2or1b3i6c483z225n1m5i51246t1k2z5x714l281g1q6t6l63126c346a69313q43243wt6b4k1rm472h1u4w5o5524w6d4z4i6c6b4h4p255f3l4p5t3x302l2b5c3j386s5n3y2q');
+	console.log('Cookie is set');
+	console.log(request.cookies.SESSION, 'cookies');
   redditAPI.getAllPosts({numPerPage: 50}, function(err, result){
     if(err){
-      response.status(500).send("oops something went wrong")
+      response.status(500).send(err.message)
     }
-   
+   else {
     response.render('post-list', {posts: result});
-  });
+   }
+   });
 });
 
 
@@ -83,7 +83,7 @@ app.post('/sortingMethod', function(request, response){
     
     redditAPI.getAllPosts({sortingMethod: request.body.sortingMethod} ,function(err,result){
       if(err){
-        response.status(500).send("oops something went wrong")
+        response.status(500).send(err.message)
       }
       else{
         response.render('post-list', {posts: result});
@@ -157,17 +157,20 @@ app.post('/' , function(request, response){
  
       else{
         redditAPI.createSession(user.id, function(err, token){
-          if(err){
-            console.log(err.message,"hellllppppp")
+          if(err.code === 'ER_DUP_ENTRY'){
+            console.log("id in session exists, redirect to /homepage")
+            response.cookie('SESSION', token);
+			console.log(request.cookies.SESSION, "cookies in browser")
             console.log(request.loggedInUser, "should be the loggedInUser")
             response.redirect('/homepage')
           }
          else if(err && !err.code === 'ER_DUP_ENTRY'){
-        response.status(400).send("You've entered the incorrect username or password")
+        response.status(400).send(err.message,"You've entered the incorrect username or password")
           }
           else{
-            console.log(response.cookies, "< should be cookies")
-            response.cookies('SESSION', token);
+            
+            response.cookie('SESSION', token);
+			  console.log(request.cookies.SESSION, "< should be cookies");
             response.redirect('/homepage');
           }
           
@@ -210,7 +213,7 @@ app.post('/createContent', urlencodedParser, function(request, response) {
 
 app.get('/homepage', function(request, response){
 
-      console.log(response.cookies)
+      console.log(request.cookies, "where is my cookie")
       console.log(request.body, "request b0dy")
       if (!request.loggedInUser) {
          
@@ -233,7 +236,7 @@ app.get('/homepage', function(request, response){
   }
   
 })
-  
+
 
 
 app.post('/vote', function(request, response){
@@ -312,27 +315,34 @@ app.get('/r/:subreddit/:sorting', function(request, response) {
 
 
 
-
-app.post('/logout', function (req, res) {
-
-    if (req.cookies.SESSION) {
-        //clear session from database
-        //pass SESSION info to delete from database
-        redditAPI.deleteUserFromSession(req.cookies.SESSION),
-            function (err, success) {
-                if (err) {
-                    console.log('err', err);
-                    res.send(err.message)
-                } else {
-                    console.log('success', success)
-                    res.clearCookie('SESSION');
-                    res.send('You have been logged out');
-                }
-
-            }
+app.get('/signout', function(request, response) {
+  if(!request.body) { 
+    console.log('there was an error obtaining the signout request, signout_1')
+  }
+  else if(!request.loggedInUser) { 
+  console.log("User not signed in, signout_3");
+  response.redirect('/');
+  }
+  
+  redditAPI.signout(request.loggedInUser, function(err, result) {
+    if(err){
+      response.send(err.message)
+      }
+    else{
+    response.clearCookie('SESSION');
+		console.log('logged out')
+    response.redirect('/');
     }
+  });
+});
 
+app.get('/testSignout', function(request, response) {
+	response.clearCookie('SESSION');
+		console.log('logged out')
+    response.send('you have signed out your cookie');
 })
+
+
 
 
 
@@ -346,6 +356,3 @@ var server = app.listen(process.env.PORT, process.env.IP, function () {
 
   console.log('Example app listening at http://%s:%s', host, port);
 });
-
-
-
