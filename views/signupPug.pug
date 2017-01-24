@@ -1,0 +1,10 @@
+block title
+    title = signup
+form(action="/signup", method="POST")
+  div
+    input(type="text", name="username", placeholder="Enter your userName here")
+  div 
+    input(type="password", name="password", placeholder="Choose your password")
+  button(type="submit" name= "user") Submit
+div
+  button(value="go home", onclick="window.location ='https://reddit-nodejs-api-project-kitchdev.c9users.io/'") Go Back

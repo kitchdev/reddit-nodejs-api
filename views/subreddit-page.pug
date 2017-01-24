@@ -1,0 +1,30 @@
+extends layout.pug
+block title
+  title r/#{name}
+  h1 Welcome to #{name}!
+block content
+  form(action="/sortingMethodHome", method="POST")
+     p Categories: 
+         button(type="submit", name="sortingMethod", value="topRanking") Top Ranking
+         button(type="submit", name="sortingMethod", value="Newest") Newest
+         button(type="submit", name="sortingMethod", value="hotnessRanking") Hotness Ranking
+     button(value="Create a post", onclick="window.location ='https://reddit-nodejs-api-project-kitchdev.c9users.io/createContent'") Create a post?
+  ul.post-list
+  each post in posts
+    li.post-wrap
+      h2
+        a(href=post.posts_url)= post.posts_title
+    form(action='/vote', method='post')
+      input(type='hidden', name='vote', value= 1)
+      input(type='hidden', name='postId', value= post.posts_id)
+      button(type='submit') updoot   
+    form(action='/vote', method='post')
+      input(type='hidden', name='vote', value= -1)
+      input(type='hidden', name='postId', value= post.posts_id)
+      button(type='submit') downdoot
+      p Post Score: #{post.voteTotal}
+      p subreddit: #{post.subreddits_name}
+      p Submitted by #{post.users_username}
+block foot
+  
+          

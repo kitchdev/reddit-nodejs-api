@@ -4,28 +4,28 @@ var mysql = require('mysql');
 // create a connection to our Cloud9 server
 var connection = mysql.createConnection({
   host     : 'localhost',
-  user     : 'ziad_saab', // CHANGE THIS :)
+  user     : 'kitchdev', 
   password : '',
-  database: 'reddit'
+  database: 'reddit_project'
 });
 
 // load our API and pass it the connection
 var reddit = require('./reddit');
 var redditAPI = reddit(connection);
 
-// It's request time!
+
 redditAPI.createUser({
-  username: 'hello23',
+  username: 'John Smith',
   password: 'xxx'
 }, function(err, user) {
   if (err) {
     console.log(err);
   }
   else {
-    redditAPI.createPost({
-      title: 'hi reddit!',
+    redditAPI.createPost(1,{
+      title: 'dorks like porks',
       url: 'https://www.reddit.com',
-      userId: user.id
+      userId: 5
     }, function(err, post) {
       if (err) {
         console.log(err);
@@ -33,6 +33,7 @@ redditAPI.createUser({
       else {
         console.log(post);
       }
+      connection.end()
     });
   }
 });

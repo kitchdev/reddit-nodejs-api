@@ -13,40 +13,80 @@ var connection = mysql.createConnection({
   password : '',
   database: 'reddit_project'
 });
-   
-   
-var reddit = require('./reddit');
 
-
+var reddit = require('./old-reddit');
 var redditAPI = reddit(connection);
-
 
 app.set('view engine', 'pug');
 
-
 var cookieParser = require('cookie-parser');
-
 app.use(cookieParser())
 
 app.use(checkLoginToken);
-
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use(morgan('dev'));
+//ex1
+// app.get('/', function (req, res) {
+//   res.send('<h1>Hello World!</h1>');
+// });
 
-app.use('/', express.static('static-files'));
+// ex2A
+// app.get('/hello', function(request, response) {
+//   var name = request.query.name || "World";
+//   response.send("<h1>Hello " + name + "!</h1>");
+// });
+//ex2B
+// app.get('/name/:name', function(request, response){
+//   response.send('<h1>Hello ' + request.params.name + '!</h1>');
+// })
 
-var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
-
-
+// ex3
+// app.get('/calculator/:operation', function(req, res){
+  
+  
+//   var num1 = parseInt(req.query.num1);
+//   var num2 = parseInt(req.query.num2);
+ 
+//   var obj = {
+//     "operator": req.params.operation,
+//   "firstOperand": req.query.num1,
+//   "secondOperand": req.query.num2
+//   }
+  
+//   switch(req.params.operation){
+//     case 'add':
+//     obj.solution = num1 + num2;
+//       break;
+//     case 'sub':
+//     obj.solution = num1 - num2;
+//       break;
+//     case 'div':
+//       obj.solution = num1/num2;
+//       break;
+//     case 'mult':
+//       obj.solution = num1*num2;
+//       break;
+//       default: 
+//       obj.operation = ' ';
+//         break;
+//     }
+//     if(obj.opertaion){
+//       res.status(404).send({ error: 'EROROROROR' });
+//     }
+//     else{
+//     res.send(`${JSON.stringify(obj)}`);
+//     }
+    
+//   })
+  
 function checkLoginToken(request, response, next){
   if(request.cookies.SESSION){
-    redditAPI.getUserFromSession(request.cookie.SESSION, function(err, user){
-      if(err){response.status(401).send("whoops, something weird happened")};
+    redditAPI.getUserFromSession(request.cookies.SESSION, function(err, user){
+      if(err){response.status(401).send("whoops, something weird happened", {err})};
       
-      if(user){ 
-        console.log(user.sessionId, 'hey its me')
+      if(user){ console.log(user)
         request.loggedInUser = user.sessionId;
         response.locals.user = user;
       }
@@ -62,7 +102,7 @@ function checkLoginToken(request, response, next){
 
 
 
-
+//ex4
 
 app.get('/', function(request, response){
   
@@ -77,7 +117,11 @@ app.get('/', function(request, response){
 
 
 
-app.post('/sortingMethod', function(request, response){
+//ex6
+var urlencodedParser = bodyParser.urlencoded({ extended: false })
+
+
+app.post('/sortingMethod', urlencodedParser, function(request, response){
   if (!request.body){ return response.sendStatus(400)}
   else{
     
@@ -94,9 +138,7 @@ app.post('/sortingMethod', function(request, response){
 
 })
 
-
-
-app.post('/sortingMethodHome', function(request, response){
+app.post('/sortingMethodHome', urlencodedParser, function(request, response){
   if (!request.body){ return response.sendStatus(400)}
   else{
     
@@ -116,13 +158,10 @@ app.post('/sortingMethodHome', function(request, response){
 })
 
 
-
 app.get('/signup', function(request, response){
    response.render('signupPug');
    
 });
-
-
 
 app.post('/signup', urlencodedParser, function(request, response){
   if (!request.body){ return response.sendStatus(400)}
@@ -130,7 +169,7 @@ app.post('/signup', urlencodedParser, function(request, response){
     
     redditAPI.createUser({username: request.body.username, password: request.body.password} ,function(err,result){
       if(err){
-        response.status(500).send("Your username is already taken")
+        response.status(500).send("oopsies something went wrong")
       }
       else if(request.body.username === null || request.body.password === null){
         response.status(400).send('you must enter a valid username and password')
@@ -144,30 +183,25 @@ app.post('/signup', urlencodedParser, function(request, response){
 
 })
 
-
-
-app.post('/' , function(request, response){
+app.post('/', urlencodedParser, function(request, response){
     redditAPI.checkLogin(request.body.username, request.body.password, function(err, user){
-      console.log(request.body.username, request.body.password, "< this < shouldnt be undefined")
+      
       if(err){
         console.log(err)
-        response.status(400).send("you've entered the wrong username or password")  
+        response.status(400).send(err)  
         
       }
  
       else{
         redditAPI.createSession(user.id, function(err, token){
-          if(err){
-            console.log(err.message,"hellllppppp")
-            console.log(request.loggedInUser, "should be the loggedInUser")
+          if(err.code === 'ER_DUP_ENTRY'){
             response.redirect('/homepage')
           }
          else if(err && !err.code === 'ER_DUP_ENTRY'){
-        response.status(400).send("You've entered the incorrect username or password")
+        response.status(400).send(err,"You've entered the incorrect username or password")
           }
           else{
-            console.log(response.cookies, "< should be cookies")
-            response.cookies('SESSION', token);
+            response.cookie('SESSION', token);
             response.redirect('/homepage');
           }
           
@@ -175,8 +209,6 @@ app.post('/' , function(request, response){
       }
     });
 });
-
-
 
 app.post('/createContent', urlencodedParser, function(request, response) {
   // before creating content, check if the user is logged in
@@ -206,16 +238,11 @@ app.post('/createContent', urlencodedParser, function(request, response) {
   }
 })
 
-
-
 app.get('/homepage', function(request, response){
-
-      console.log(response.cookies)
-      console.log(request.body, "request b0dy")
-      if (!request.loggedInUser) {
+       if (!request.loggedInUser) {
          
     // HTTP status code 401 means Unauthorized
-        response.send("there's something wrong with your login process, please refresh the browser");
+    response.redirect('/');
   }
   else{
     
@@ -227,14 +254,12 @@ app.get('/homepage', function(request, response){
     else{
        
     response.render('homepage', {posts: result});
-    
+    console.log(request.cookie)
     }
   });
   }
   
 })
-  
-
 
 app.post('/vote', function(request, response){
   if(!request.loggedInUser){
@@ -258,8 +283,6 @@ app.post('/vote', function(request, response){
   }
 })
 
-
-
 app.post('/subredditChoice', function(request, response){
     if (!request.body){ return response.sendStatus(400)}
   else{
@@ -279,66 +302,6 @@ app.post('/subredditChoice', function(request, response){
 })
 
 
-
-app.get('/subredditmenu', function(request, response){
-  redditAPI.getAllSubreddits(function(err, result){
-    
-     console.log(result);
-    
-    if(err){console.log(result)
-      return response.sendStatus(400)
-    }
-    else{
-      console.log(result)
-      response.render('subreddit-menu', {posts: result})
-    }
-  });
-})
-
-
-
-app.get('/r/:subreddit/:sorting', function(request, response) {
-    
-   var sort = request.params.sorting || "Newest";
-   
-   redditAPI.getAllPosts({subreddit: request.params.subreddit, sortingMethod: sort},  function(err, posts) {
-     if(err) console.log(err) 
-     else {
-       console.log(request.params)
-        response.render('subreddit-page', {posts: posts, name: request.params.subreddit, id: request.params.id, description: request.params.description});
-     }
-   }); 
-});
-
-
-
-
-app.post('/logout', function (req, res) {
-
-    if (req.cookie.SESSION) {
-        //clear session from database
-        //pass SESSION info to delete from database
-        redditAPI.deleteUserFromSession(req.cookie.SESSION),
-            function (err, success) {
-                if (err) {
-                    console.log('err', err);
-                    res.send(err.message)
-                } else {
-                    console.log('success', success)
-                    res.clearCookie('SESSION');
-                    res.send('You have been logged out');
-                }
-
-            }
-    }
-
-})
-
-
-
-
-
-
 // Boilerplate code to start up the web server
 var server = app.listen(process.env.PORT, process.env.IP, function () {
   var host = server.address().address;
@@ -347,5 +310,7 @@ var server = app.listen(process.env.PORT, process.env.IP, function () {
   console.log('Example app listening at http://%s:%s', host, port);
 });
 
+app.get('/r/#{')
 
-
+//decodeURIcomponent()
+//encodeURIcomponent()

@@ -1,0 +1,36 @@
+extends layout.pug
+block title
+    title homepage
+    header
+      div.upmenu      
+        a(href="/subredditmenu")
+          button(type="submit") Subreddit Menu!
+            form(action="/sortingMethod", method="POST")
+              button(type="submit", name="sortingMethod", value="topRanking") Top Ranking
+              button(type="submit", name="sortingMethod", value="Newest") Newest
+              button(type="submit", name="sortingMethod", value="hotnessRanking") Hotness Ranking  
+      div.innerHead
+        h1 Welcome to Reddit Clone!
+          p the front page of the internet
+    article.login        
+      form(action="/", method="POST")
+          input(type="text", name="username", placeholder="Enter your userName here")
+          input(type="password", name="password", placeholder="Enter your password here")
+          button(type="submit" name= "loginbutton") Login
+      div.signup  
+      button(value="go to signup", onclick="window.location ='https://reddit-nodejs-api-project-kitchdev.c9users.io/signup'") Not a member? Sign up here!
+
+block content
+  ul.post-list
+  each post in posts
+    li.post-wrap
+      h2
+        a(href=post.posts_url)= post.posts_title
+      p Post Score: #{post.voteTotal}
+      p subreddit: #{post.subreddits_name}
+      p Submitted by #{post.users_username}
+block foot
+  footer
+  
+          
+

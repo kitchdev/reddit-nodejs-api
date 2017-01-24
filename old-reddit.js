@@ -1,5 +1,6 @@
 var bcrypt = require('bcrypt');
 var HASH_ROUNDS = 10;
+
 var secureRandom = require('secure-random');
 
 module.exports = function RedditAPI(conn) {
@@ -159,11 +160,10 @@ module.exports = function RedditAPI(conn) {
           JOIN users ON posts.userId = users.id
           LEFT JOIN subreddits ON posts.subredditId = subreddits.id
           LEFT JOIN votes ON posts.id = votes.postId
-          ${options.subreddit ? 'WHERE subreddits.name =  ?' : ''}
           GROUP BY posts.id
           ${sortingMethod ? sortingMethod : `ORDER BY posts.createdAt DESC`}
           LIMIT ? OFFSET ?`
-        , options.subreddit ?  [options.subreddit, limit, offset]: [limit, offset],
+        , [limit, offset],
         function(err, results) {
           if (err) {
             callback(err);
@@ -296,7 +296,7 @@ module.exports = function RedditAPI(conn) {
           sortingMethod = `ORDER BY hotnessRanking DESC`;
           break;
         case 'Newest':
-          sortingMethod = 'ORDER BY posts.createdAt DESC';
+          sortingMethod = 'ORDER BY Newest DESC';
           break;
         case 'latestFive':
           sortingMethod = 'ORDER BY latestFive DESC LIMIT 5';
@@ -336,12 +336,11 @@ module.exports = function RedditAPI(conn) {
               
                 callback(null, result.map(function(item){
                   return {
-                    page: (item.posts_title).replace(/ /g, ""),
                     title: item.posts_title,
                     submitted_by: item.users_username,
                     score: item.voteTotal
                   }
-                }));
+                }))
               }
             })
     },
@@ -398,62 +397,50 @@ module.exports = function RedditAPI(conn) {
     
     createSession: function(userid, callback){
         var token = API.createSessionToken();
-        conn.query('INSERT INTO sessions SET userid= ?, token= ?', [userid, token], function(err, result){
-          if(!err || err.code === 'ER_DUP_ENTRY'){
-            console.log(err,"this is where i am")
+        conn.query('INSERT INTO sessions SET userid =?, token= ?', [userid, token], function(err, result){
+          if(err.code === "ER_DUP_ENTRY"){
             callback(err);
-            console.log(token, 'token')
             }
             else if(err){
               callback(err);
             }
             else{
-              console.log(token,"please get here")
               callback(null, token);
             }
         })
       },
     
-    getUserFromSession: function(cookies, callback){
-        conn.query( `SELECT
-                    users.username AS username,
+    getUserFromSession: function(cookie, callback){
+        conn.query( `SELECT users.id,
+                    users.username,
+                    users.password,
+                    users.createdOn,
+                    users.updatedOn,
                     sessions.userid AS sessions_Id,
                     sessions.token AS sessions_token
                     from users
-                    JOIN sessions
+                    LEFT JOIN sessions
                     ON sessions.userid = users.id
                     WHERE token = ?
-                    `, [cookies], function(err, result){
+                    `, [cookie], function(err, result){
                       if(err){
                         callback(err)
                       }
                       else{
-                      
                           var userObj =  {
-                          username: result.username,
-                          sessionId: result.sessions_Id,
-                          token: result.sessions_token 
+                          username: result[0].username,
+                          password: result[0].password,
+                          sessionId: result[0].sessions_Id,
+                          token: result[0].sessions_token 
                           }
-                        console.log(userObj, "duddddde")
+
                         callback(null, userObj);
-                    
-                        
                       }
-                      
                     })
-                },
+                }
       
-      	deleteUserFromSession: function(sessionCookie, callback) {
-      		conn.query(`
-      			DELETE FROM sessions WHERE token = ?
-      			`, [sessionCookie],
-      			function (err, result) {
-      				if (err) { callback(err) }
-      				else {
-      					callback (null, result)
-      				}
-      		});
-      	}  
+      
+      
     };
     return API;
   };

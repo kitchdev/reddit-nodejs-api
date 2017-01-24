@@ -403,13 +403,12 @@ module.exports = function RedditAPI(conn) {
           if(err.code === 'ER_DUP_ENTRY') {
             console.log(err,"this is where i am")
             callback(err);
-            console.log(token, 'Error: dup entry, token from create session')
+            console.log(token, 'Error: dup entry, token from create session');
             }
             else if(err && !err.code === 'ER_DUP_ENTRY'){	
               callback(err);
             }
             else{
-              console.log(token,"please get here")
               callback(null, token);
             }
         })
@@ -417,8 +416,10 @@ module.exports = function RedditAPI(conn) {
     
     getUserFromSession: function(cookies, callback){
         conn.query( `SELECT sessions.id,
-                    sessions.token as sessionToken
+                    sessions.token,
+                    users.username
                     from sessions
+                    Join users on users.id = sessions.id
                     WHERE token = ?
                     `, [cookies], function(err, result){
                       if(err){

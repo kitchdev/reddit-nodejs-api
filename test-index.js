@@ -42,7 +42,7 @@ var urlencodedParser = bodyParser.urlencoded({ extended: false })
 function checkLoginToken(request, response, next){
 	
 		if (request.cookies.SESSION) {
-//			redditAPI.getUserFromSession(request.cookies.SESSION, function(err, userId){
+//			redditAPI.getUserFromSession(request.cookie.SESSION, function(err, userId){
 			redditAPI.getUserFromSession("t5b4g3r3l4a1p4u523b5r121b3c2c5q3kz5es6s1m1u254dg2o5k6o2or1b3i6c483z225n1m5i51246t1k2z5x714l281g1q6t6l63126c346a69313q43243wt6b4k1rm472h1u4w5o5524w6d4z4i6c6b4h4p255f3l4p5t3x302l2b5c3j386s5n3y2q", function(err, userId){
       
 			  if(userId){ 
@@ -179,9 +179,13 @@ app.post('/' , function(request, response){
     });
 });
 
+app.get('/createContent', function(request, response){
+   response.render('create-content');
+   
+});
 
 
-app.post('/createContent', urlencodedParser, function(request, response) {
+app.post('/createContent', function(request, response) {
   // before creating content, check if the user is logged in
     
   if (!request.loggedInUser) {
@@ -196,12 +200,12 @@ app.post('/createContent', urlencodedParser, function(request, response) {
       url: request.body.url,
       title: request.body.title,
       userId: request.loggedInUser
-      
     }, function(err, post) {
       if(err){
         response.status(500).send('something went wrong on out end')
       }
       else{
+        console.log(request.loggedInUser)
       // do something with the post object or just response OK to the user :)
       response.redirect("/homepage")
       }
@@ -228,7 +232,7 @@ app.get('/homepage', function(request, response){
       response.status(500).send(err.code)
     }
     else{
-       
+       console.log(request.loggedInUser, "logged in user")
     response.render('homepage', {posts: result});
     
     }
@@ -246,12 +250,12 @@ app.post('/vote', function(request, response){
   else{console.log(request.body)
     redditAPI.createOrUpdateVote({ 
       postId:  Number(request.body.postId),
-      userId: request.loggedInUser,
+      userId: request.loggedInUser.id,
       vote: Number(request.body.vote)
       } 
       , function(err, result){
       if(err){
-       
+        console.log(request.loggedInUser)
         response.status(500).send(`jesus loves you ${err}`)
       }
       else{console.log(request.headers.referer)
@@ -331,7 +335,6 @@ app.get('/signout', function(request, response) {
     else{
     response.clearCookie('SESSION');
 		console.log('logged out')
-    response.redirect('/');
     }
   });
 });
@@ -339,7 +342,7 @@ app.get('/signout', function(request, response) {
 app.get('/testSignout', function(request, response) {
 	response.clearCookie('SESSION');
 		console.log('logged out')
-    response.send('you have signed out your cookie');
+    response.redirect('/')
 })
 
 

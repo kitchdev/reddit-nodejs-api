@@ -1,0 +1,82 @@
+header {
+  padding: 15vh 0; /* Padding top and bottom will be in % of the viewport height */
+  background-image: url(http://vignette3.wikia.nocookie.net/vaporwave/images/5/50/Wiki-background/revision/latest?cb=20150317164647);
+  background-size: cover; /* full-screen backgrounds! */
+  color: white;
+  width:100%;
+  
+}
+
+
+
+.innerHead {
+  background: url(http://www.hdbloggers.net/wp-content/uploads/2016/09/Cool-Wallpaper-Background-8.jpg);
+  opacity: 0.8;
+  width: 100%;
+    /* you need to match the shadow color to your background or image border for the desired effect*/
+
+  padding: 2em 0;
+
+}
+.upmenu{
+    top:0;
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    align-content: space-around;
+}
+
+.login{
+    display: flex;
+    justify-content: center;
+}
+
+html {
+    background-color: 	  #cce6ff;
+    font-family: "verdana", sans-serif;
+}
+button {
+    width   : 160px;
+    background  : none;
+    cursor  : pointer;
+    font-size   : 16px;
+    color   : #fff;
+    border  : none;
+    margin      : 0px;
+    padding     : 0px;
+    font: verdana;
+    font-weight: bolder;
+}
+
+
+.post-list{
+    display: flex;
+    justify-content: center;
+    
+}
+input{
+    display: flex;
+    
+    text-align: center;
+    border: none;
+    border-radius: .2em;
+}
+
+.post-wrap{
+    list-style: none;
+    flex-direction: column;
+    padding: 5vh;
+    max-width: 50%;
+    background-color: transparent;
+}
+
+.post-wrap h2{
+    margin:0;
+    padding:0;
+}
+
+.post-wrap p {
+    padding:0;
+    margin: 0;
+    font-size: small;
+}
